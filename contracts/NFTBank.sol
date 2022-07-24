@@ -24,16 +24,16 @@ abstract contract NFTEscrow is ERC1155, IERC721Receiver {
 
     /**
      * @dev returns the token id of the NFT corresponding to the details passed as param.
-     * @param nftContract address of the NFT contract.
+     * @param nft address of the NFT contract.
      * @param nftId token id of the borrower's NFT.
-     * @param endTime the end date for the loan.
+     * @param duration the end date for the loan.
      * @param debtCeiling the debt ceiling of the loan expected by the borrower.
      * @param interestRate expected interest rate of the loan by the borrower.
      */
     function getTokenId(
-        address nftContract,
+        address nft,
         uint256 nftId,
-        uint256 endTime,
+        uint256 duration,
         uint256 debtCeiling,
         uint256 interestRate
     ) public pure returns (uint256 id) {
@@ -41,9 +41,9 @@ abstract contract NFTEscrow is ERC1155, IERC721Receiver {
             uint256(
                 keccak256(
                     abi.encodePacked(
-                        nftContract,
+                        nft,
                         nftId,
-                        endTime,
+                        duration,
                         debtCeiling,
                         interestRate
                     )
@@ -54,28 +54,28 @@ abstract contract NFTEscrow is ERC1155, IERC721Receiver {
     /**
      * @dev creates an NFT with details of the loan and assigns them to borrower until a loan offer is accepted.
      * @param owner NFT owner
-     * @param nftContract address of the NFT
+     * @param nft address of the NFT
      * @param nftId NFT id
-     * @param endTime the time of the loan repayment
+     * @param duration the time of the loan repayment
      * @param debtCeiling debt ceiling set by the borrower 
      * @param interestRate the rate of the loan
      */
-    function create(
+    function createToken(
         address owner,
-        address nftContract,
+        address nft,
         uint256 nftId,
-        uint256 endTime,
+        uint256 duration,
         uint256 debtCeiling,
         uint256 interestRate
     ) internal {
         uint256 id = getTokenId(
-            nftContract,
+            nft,
             nftId,
-            endTime,
+            duration,
             debtCeiling,
             interestRate
         );
-        require(idToTokenPrice[id] == 0, "used");
+        require(idToTokenPrice[id] == 0, "incorrect-nft-id");
         idToTokenPrice[id] = 1e18;
         _mint(owner, id, 1, "");
     }
@@ -96,13 +96,13 @@ abstract contract NFTEscrow is ERC1155, IERC721Receiver {
         uint256 _tokenId,
         bytes calldata _data
     ) public override returns (bytes4) {
-        (uint256 endTime, uint256 debtCeiling, uint256 interestRate) = abi
+        (uint256 duration, uint256 debtCeiling, uint256 interestRate) = abi
             .decode(_data, (uint256, uint256, uint256));
-        create(
+        createToken(
             _operator,
             msg.sender,
             _tokenId,
-            endTime,
+            duration,
             debtCeiling,
             interestRate
         );
